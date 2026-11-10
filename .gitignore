@@ -14,3 +14,9 @@ __pycache__/
 .DS_Store
 Thumbs.db
 .ipynb_checkpoints/
+
+# generated cases and run results: keep only the examples
+scripts/cases/*
+!scripts/cases/example.json
+scripts/output/*
+!scripts/output/example.jsonl

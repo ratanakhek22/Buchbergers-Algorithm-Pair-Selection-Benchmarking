@@ -1,0 +1,15 @@
+{
+  "family": "example",
+  "n": 2,
+  "seed": null,
+  "modulus": 32003,
+  "variables": [
+    "x",
+    "y"
+  ],
+  "polynomials": [
+    "x**2 - y",
+    "y**2 - 1",
+    "x*y - 1"
+  ]
+}
