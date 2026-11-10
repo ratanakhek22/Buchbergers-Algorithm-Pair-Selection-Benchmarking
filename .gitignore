@@ -1,0 +1,16 @@
+# virtual environments
+.venv/
+venv/
+
+# Python caches and build files
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.ipynb_checkpoints/
