@@ -49,8 +49,26 @@ def sPolynomial(g_i, g_j):
     b = g_j.mul_term((monomial_div(lcm, g_j.LM), 1 / g_j.LC))
     return a - b
 
-def division(dividend, divisor):
-    return 0        # TODO
+def division(dividend, divisors):
+    p = dividend
+    G = [(g, *g.LT) for g in divisors]          # (g, g_lm, g_lc)
+    r = dividend.ring.zero
+    while p:
+        lm, lc = p.LT                           # LT of current p
+        div_flag = False
+
+        for g, g_lm, g_lc in G:
+            mult = monomial_div(lm, g_lm)       # multiplier if possible
+            if mult is not None:
+                div_flag = True
+                p = p - g.mul_term((mult, lc / g_lc))
+
+        if not div_flag:                        # If p's LT is not divisible, move it to r
+            lt = p.ring({lm: lc})
+            r = r + lt
+            p = p - lt
+
+    return r
 
 def load_case(path, order_name):
     with open(path) as fh:
@@ -88,7 +106,6 @@ def main():
     print(stats)
     
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())
