@@ -10,23 +10,27 @@ from sympy.polys.domains import GF
 from sympy.polys.orderings import lex, grlex
 from sympy.polys.monomials import monomial_lcm, monomial_div
 
-# importing all rules
+# local imports 
 from rules import RULES_MAP
+from progress import Progress
 
 RULES = list(RULES_MAP)
 ORDERS = ["lex", "grlex"]
 ORDER_MAP = {"lex": lex, "grlex": grlex}
 
-def buchberger_algorithm(R, F, rule, state):
+def buchberger_algorithm(R, F, rule, state, progress):
     G = list(F)
     B = list(itertools.combinations(range(len(G)), 2))
     stats = {"pairs_processed": 0, "zero_reductions": 0, "pair_order": []}
-    
+
+    pair = None
     while B:
-        k = rule(B, G, state)       # index of the chosen pair in B
+        k = rule(B, G, state)                           # index of the chosen pair in B
         i, j = B[k]
+        pair = (i, j)
         B[k] = B[-1]
         B.pop()
+        progress.update(B, G, pair, stats)
 
         stats["pairs_processed"] += 1
         stats["pair_order"].append((i + 1, j + 1))      # 1-based, to match the paper
@@ -41,6 +45,7 @@ def buchberger_algorithm(R, F, rule, state):
         else:
             stats["zero_reductions"] += 1
 
+    progress.close(B, G, pair, stats)
     return G, stats
 
 def sPolynomial(g_i, g_j):
@@ -55,13 +60,14 @@ def division(dividend, divisors):
     r = dividend.ring.zero
     while p:
         lm, lc = p.LT                           # LT of current p
-        div_flag = False
+        div_flag = False                        # Track if G finds something to divide by
 
         for g, g_lm, g_lc in G:
             mult = monomial_div(lm, g_lm)       # multiplier if possible
             if mult is not None:
                 div_flag = True
                 p = p - g.mul_term((mult, lc / g_lc))
+                break
 
         if not div_flag:                        # If p's LT is not divisible, move it to r
             lt = p.ring({lm: lc})
@@ -89,18 +95,22 @@ def main():
     parser.add_argument("-tc", "--testcase", type=str, required=True, help="Path to the test case (input ideal) file.")
 
     # Optional
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show live progress.")
     parser.add_argument("-r", "--rule", type=str, default="normal", choices=RULES, help="Pair selection strategy (default: normal).")
     parser.add_argument("-o", "--order", type=str, default="lex", choices=ORDERS, help="Monomial order (default: lex).")
     parser.add_argument("-s", "--seed", type=int, default=0, help="Random seed, used by the random strategy (default: 0).")
 
     args = parser.parse_args()
 
+    print(f"Beginning Test with rule: {args.rule}")
+
     # Setup
     R, F, case = load_case(args.testcase, args.order)
     rule = RULES_MAP[args.rule]
     state = {"ring": R, "rng": random.Random(args.seed)}
 
-    G, stats = buchberger_algorithm(R, F, rule, state)
+    progress = Progress(enabled=args.verbose)
+    G, stats = buchberger_algorithm(R, F, rule, state, progress)
 
     # TEMP
     print(stats)
