@@ -8,6 +8,7 @@ from sympy import sympify, Symbol
 from sympy.polys.rings import ring
 from sympy.polys.domains import GF
 from sympy.polys.orderings import lex, grlex
+from sympy.polys.monomials import monomial_lcm, monomial_div
 
 # importing all rules
 from rules import RULES_MAP
@@ -43,7 +44,10 @@ def buchberger_algorithm(R, F, rule, state):
     return G, stats
 
 def sPolynomial(g_i, g_j):
-    return 0        # TODO
+    lcm = monomial_lcm(g_i.LM, g_j.LM)
+    a = g_i.mul_term((monomial_div(lcm, g_i.LM), 1 / g_i.LC))
+    b = g_j.mul_term((monomial_div(lcm, g_j.LM), 1 / g_j.LC))
+    return a - b
 
 def division(dividend, divisor):
     return 0        # TODO
@@ -74,11 +78,14 @@ def main():
     args = parser.parse_args()
 
     # Setup
-    random.seed(args.seed)
     R, F, case = load_case(args.testcase, args.order)
     rule = RULES_MAP[args.rule]
+    state = {"ring": R, "rng": random.Random(args.seed)}
 
-    buchberger_algorithm(R, F, rule)
+    G, stats = buchberger_algorithm(R, F, rule, state)
+
+    # TEMP
+    print(stats)
     
     return 0
 

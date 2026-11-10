@@ -1,2 +1,2 @@
 def sugar_selection(B, G, state):
-    return B[0]     # TODO
+    return 0     # TODO
