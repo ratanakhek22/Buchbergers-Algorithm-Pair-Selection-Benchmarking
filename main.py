@@ -58,6 +58,7 @@ def division(dividend, divisors):
     p = dividend
     G = [(g, *g.LT) for g in divisors]          # (g, g_lm, g_lc)
     r = dividend.ring.zero
+    stats = {"poly_addition": 0}
     while p:
         lm, lc = p.LT                           # LT of current p
         div_flag = False                        # Track if G finds something to divide by
@@ -67,6 +68,7 @@ def division(dividend, divisors):
             if mult is not None:
                 div_flag = True
                 p = p - g.mul_term((mult, lc / g_lc))
+                stats["poly_addition"] += 1
                 break
 
         if not div_flag:                        # If p's LT is not divisible, move it to r
@@ -74,7 +76,7 @@ def division(dividend, divisors):
             r = r + lt
             p = p - lt
 
-    return r
+    return r, stats
 
 def load_case(path, order_name):
     with open(path) as fh:
