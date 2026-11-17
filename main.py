@@ -10,7 +10,7 @@ import platform
 import subprocess
 
 import sympy
-from sympy import sympify, Symbol
+from sympy import sympify, Symbol, groebner
 from sympy.polys.rings import ring
 from sympy.polys.domains import GF
 from sympy.polys.orderings import lex, grlex
