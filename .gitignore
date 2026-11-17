@@ -18,5 +18,5 @@ Thumbs.db
 # generated cases and run results: keep only the examples
 scripts/cases/*
 !scripts/cases/example.json
-scripts/output/*
-!scripts/output/example.jsonl
+output/*
+!output/example.jsonl

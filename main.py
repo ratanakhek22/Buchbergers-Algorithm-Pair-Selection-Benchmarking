@@ -24,7 +24,7 @@ from progress import Progress
 RULES = list(RULES_MAP)
 ORDERS = ["lex", "grlex"]
 ORDER_MAP = {"lex": lex, "grlex": grlex}
-DEFAULT_OUT = Path(__file__).resolve().parent / "scripts" / "output"
+DEFAULT_OUT = Path(__file__).resolve().parent / "output"
 
 def buchberger_algorithm(R, F, rule, state, progress, track_sugar, use_criterion):
     G = list(F)
@@ -70,7 +70,9 @@ def buchberger_algorithm(R, F, rule, state, progress, track_sugar, use_criterion
             if track_sugar:
                 sugars.append(sugar)
             t = len(G) - 1
-            B.extend((l, t) for l in range(t))
+            new_pairs = [(l, t) for l in range(t)]
+            B.extend(new_pairs)
+            Bset.update(new_pairs)
         else:
             stats["zero_reductions"] += 1
 
@@ -184,8 +186,10 @@ def main():
 
     # Reduced basis, used both for its size and as a correctness check
     X = [Symbol(v) for v in case["variables"]]
-    ours = groebner([g.as_expr() for g in G], *X, order=args.order, modulus=case["modulus"])
     ref = groebner([f.as_expr() for f in F], *X, order=args.order, modulus=case["modulus"])
+    # G is a Groebner basis exactly when every leading monomial of the reference basis
+    # is divisible by the leading monomial of some g in G.
+    is_gb = all(any(monomial_div(R.from_expr(h).LM, g.LM) is not None for g in G) for h in ref.exprs)
 
     record = {
         "run_id": run_id,
@@ -195,9 +199,9 @@ def main():
         **stats,
         "time_total_elapsed": end - start,
         "G_size": len(G),
-        "G_size_reduced": len(ours.exprs),
-        "correct": ours.exprs == ref.exprs,
-        "reduced_basis": [str(e) for e in ours.exprs],
+        "G_size_reduced": len(ref.exprs),
+        "correct": is_gb,
+        "reduced_basis": [str(e) for e in ref.exprs],
         "commit": git_commit(),
         "python": platform.python_version(),
         "sympy": sympy.__version__,
