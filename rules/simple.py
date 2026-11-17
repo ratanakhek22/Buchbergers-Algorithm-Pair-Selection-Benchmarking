@@ -1,7 +1,7 @@
 from sympy.polys.monomials import monomial_lcm
 
 def first_selection(B, G, state):
-    return min(range(len(B)), key=lambda k: B[k])   # smallest (j, i)
+    return min(range(len(B)), key=lambda k: (B[k][1], B[k][0]))   # smallest j, then smallest i
 
 def random_selection(B, G, state):
     return state["rng"].randrange(len(B))
