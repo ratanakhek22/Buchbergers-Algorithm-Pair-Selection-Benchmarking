@@ -26,7 +26,7 @@ ORDERS = ["lex", "grlex"]
 ORDER_MAP = {"lex": lex, "grlex": grlex}
 DEFAULT_OUT = Path(__file__).resolve().parent / "output"
 
-def buchberger_algorithm(R, F, rule, state, progress, track_sugar, use_criterion):
+def buchberger_algorithm(R, F, rule, state, progress, track_sugar, use_criterion, max_pairs=None, max_seconds=None):
     G = list(F)
     B = list(itertools.combinations(range(len(G)), 2))
     Bset = set(B)
@@ -35,7 +35,13 @@ def buchberger_algorithm(R, F, rule, state, progress, track_sugar, use_criterion
     state["sugar"] = sugars
 
     pair = None
+    stats["finished"] = True
+    t0 = time.perf_counter()
     while B:
+        if (max_pairs is not None and stats["pairs_processed"] >= max_pairs) or (max_seconds is not None and time.perf_counter() - t0 > max_seconds):
+            stats["finished"] = False
+            break
+
         start_rule_overhead = time.perf_counter()
         k = rule(B, G, state)                           # index of the chosen pair in B
         end_rule_overhead = time.perf_counter()
@@ -154,6 +160,8 @@ def main():
     parser.add_argument("-s", "--seed", type=int, default=0, help="Random seed, used by the random strategy (default: 0).")
     parser.add_argument("-c", "--criterion", type=int, default=0, choices=(0, 1), help="Whether to use 2 Criterion from CLO to eliminate pairs.")
     parser.add_argument("-O", "--output", type=Path, default=DEFAULT_OUT, help="Output directory (default: scripts/output).")
+    parser.add_argument("-t", "--timeout", type=int, default=None, help="Max time for algorithm to run before terminating.")
+    parser.add_argument("-p", "--paircutoff", type=int, default=None, help="Max number of pairs processed before terminating.")
 
     args = parser.parse_args()
 
@@ -179,7 +187,7 @@ def main():
 
     start = time.perf_counter()     # Start Time
 
-    G, stats = buchberger_algorithm(R, F, rule, state, progress, track_sugar, use_criterion)
+    G, stats = buchberger_algorithm(R, F, rule, state, progress, track_sugar, use_criterion, args.paircutoff, args.timeout)
 
     end = time.perf_counter()       # End Time
     stats["time_total_elapsed"] = end - start
@@ -187,8 +195,6 @@ def main():
     # Reduced basis, used both for its size and as a correctness check
     X = [Symbol(v) for v in case["variables"]]
     ref = groebner([f.as_expr() for f in F], *X, order=args.order, modulus=case["modulus"])
-    # G is a Groebner basis exactly when every leading monomial of the reference basis
-    # is divisible by the leading monomial of some g in G.
     is_gb = all(any(monomial_div(R.from_expr(h).LM, g.LM) is not None for g in G) for h in ref.exprs)
 
     record = {
