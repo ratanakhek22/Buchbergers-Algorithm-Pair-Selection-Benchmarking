@@ -162,6 +162,7 @@ def main():
     parser.add_argument("-O", "--output", type=Path, default=DEFAULT_OUT, help="Output directory (default: scripts/output).")
     parser.add_argument("-t", "--timeout", type=int, default=None, help="Max time for algorithm to run before terminating.")
     parser.add_argument("-p", "--paircutoff", type=int, default=None, help="Max number of pairs processed before terminating.")
+    parser.add_argument("-R", "--rep", type=int, default=0, help="Repeat index for timing repeats (default: 0).")
 
     args = parser.parse_args()
 
@@ -175,7 +176,7 @@ def main():
     state = {"ring": R, "rng": random.Random(args.seed)}
     progress = Progress(enabled=args.verbose)
 
-    run_id = f"{args.testcase.stem}|{args.order}|{args.rule}|{args.seed}|crit{args.criterion}"
+    run_id = f"{args.testcase.stem}|{args.order}|{args.rule}|{args.seed}|crit{args.criterion}|rep{args.rep}"
     out_file = args.output / f"{args.testcase.stem}.jsonl"
     args.output.mkdir(parents=True, exist_ok=True)
     if out_file.exists():
@@ -203,7 +204,7 @@ def main():
         "family": case["family"], "n": case["n"], "case_seed": case.get("seed"),
         "order": args.order, "rule": args.rule, "seed": args.seed, "criteria": use_criterion,
         **stats,
-        "time_total_elapsed": end - start if stats["finished"] else None,
+        "time_total_elapsed": end - start,
         "G_size": len(G),
         "G_size_reduced": len(ref.exprs) if stats["finished"] else None,
         "correct": is_gb if stats["finished"] else None,

@@ -118,8 +118,8 @@ def main():
                                    "-c", str(crit), 
                                    "-R", str(rep), 
                                    "-O", str(args.output), 
-                                   "--max-pairs", str(args.max_pairs), 
-                                   "--max-seconds", str(args.max_seconds)]
+                                   "--paircutoff", str(args.max_pairs),
+                                   "--timeout", str(int(args.max_seconds))]
                             if args.dry_run:
                                 print("would run:", rid)
                                 continue
