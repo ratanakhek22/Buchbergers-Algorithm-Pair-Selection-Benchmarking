@@ -48,7 +48,6 @@ def buchberger_algorithm(R, F, rule, state, progress, track_sugar):
             G.append(remainder)
             if track_sugar:
                 sugars.append(sugar)
-            state["sugar"].append(sugar)
             t = len(G) - 1
             B.extend((l, t) for l in range(t))
         else:

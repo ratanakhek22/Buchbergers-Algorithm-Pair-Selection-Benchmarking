@@ -19,6 +19,6 @@ def sugar_selection(B, G, state):
             lcms[(i, j)] = monomial_lcm(G[i].LM, G[j].LM)
         if (i, j) not in pair_sugars:
             pair_sugars[(i, j)] = pair_sugar(i, j, G, sugars)
-        return (pair_sugars[(i, j)], order(lcms[(i, j)]), i, j)
+        return (pair_sugars[(i, j)], order(lcms[(i, j)]), j, i)
 
     return min(range(len(B)), key=key)
