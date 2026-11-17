@@ -194,8 +194,8 @@ def main():
 
     # Reduced basis, used both for its size and as a correctness check
     X = [Symbol(v) for v in case["variables"]]
-    ref = groebner([f.as_expr() for f in F], *X, order=args.order, modulus=case["modulus"])
-    is_gb = all(any(monomial_div(R.from_expr(h).LM, g.LM) is not None for g in G) for h in ref.exprs)
+    ref = groebner([f.as_expr() for f in F], *X, order=args.order, modulus=case["modulus"]) if stats["finished"] else None
+    is_gb = all(any(monomial_div(R.from_expr(h).LM, g.LM) is not None for g in G) for h in ref.exprs) if stats["finished"] else None
 
     record = {
         "run_id": run_id,
@@ -203,11 +203,11 @@ def main():
         "family": case["family"], "n": case["n"], "case_seed": case.get("seed"),
         "order": args.order, "rule": args.rule, "seed": args.seed, "criteria": use_criterion,
         **stats,
-        "time_total_elapsed": end - start,
+        "time_total_elapsed": end - start if stats["finished"] else None,
         "G_size": len(G),
-        "G_size_reduced": len(ref.exprs),
-        "correct": is_gb,
-        "reduced_basis": [str(e) for e in ref.exprs],
+        "G_size_reduced": len(ref.exprs) if stats["finished"] else None,
+        "correct": is_gb if stats["finished"] else None,
+        "reduced_basis": [str(e) for e in ref.exprs] if stats["finished"] else None,
         "commit": git_commit(),
         "python": platform.python_version(),
         "sympy": sympy.__version__,
