@@ -12,16 +12,19 @@ from sympy.polys.monomials import monomial_lcm, monomial_div
 
 # local imports 
 from rules import RULES_MAP
+from rules.sugar import total_degree, pair_sugar
 from progress import Progress
 
 RULES = list(RULES_MAP)
 ORDERS = ["lex", "grlex"]
 ORDER_MAP = {"lex": lex, "grlex": grlex}
 
-def buchberger_algorithm(R, F, rule, state, progress):
+def buchberger_algorithm(R, F, rule, state, progress, track_sugar):
     G = list(F)
     B = list(itertools.combinations(range(len(G)), 2))
-    stats = {"pairs_processed": 0, "zero_reductions": 0, "pair_order": []}
+    stats = {"pairs_processed": 0, "zero_reductions": 0, "poly_addition": 0, "pair_order": []}
+    sugars  = [total_degree(f) for f in F] if track_sugar else None
+    state["sugar"] = sugars
 
     pair = None
     while B:
@@ -36,10 +39,16 @@ def buchberger_algorithm(R, F, rule, state, progress):
         stats["pair_order"].append((i + 1, j + 1))      # 1-based, to match the paper
 
         S = sPolynomial(G[i], G[j])
-        remainder = division(S, G)
+        stats["poly_addition"] += 1
+        s_ij = pair_sugar(i, j, G, sugars) if track_sugar else None
+        remainder, div_stats, sugar = division(S, G, sugars, s_ij)
+        stats["poly_addition"] += div_stats["poly_addition"]
 
         if remainder:
             G.append(remainder)
+            if track_sugar:
+                sugars.append(sugar)
+            state["sugar"].append(sugar)
             t = len(G) - 1
             B.extend((l, t) for l in range(t))
         else:
@@ -54,20 +63,24 @@ def sPolynomial(g_i, g_j):
     b = g_j.mul_term((monomial_div(lcm, g_j.LM), 1 / g_j.LC))
     return a - b
 
-def division(dividend, divisors):
+def division(dividend, divisors, sugars, sugar):
     p = dividend
-    G = [(g, *g.LT) for g in divisors]          # (g, g_lm, g_lc)
+    if sugars is None:
+        sugars = [None] * len(divisors)
+    G = [(g, *g.LT, s) for g, s in zip(divisors, sugars)]   # (g, g_lm, g_lc, g_sugar)
     r = dividend.ring.zero
     stats = {"poly_addition": 0}
     while p:
-        lm, lc = p.LT                           # LT of current p
-        div_flag = False                        # Track if G finds something to divide by
+        lm, lc = p.LT                                       # LT of current p
+        div_flag = False                                    # Track if G finds something to divide by
 
-        for g, g_lm, g_lc in G:
-            mult = monomial_div(lm, g_lm)       # multiplier if possible
+        for g, g_lm, g_lc, g_s in G:
+            mult = monomial_div(lm, g_lm)
             if mult is not None:
                 div_flag = True
                 p = p - g.mul_term((mult, lc / g_lc))
+                if sugar is not None:
+                    sugar = max(sugar, sum(mult) + g_s)     # deg t + sugar(g_k)
                 stats["poly_addition"] += 1
                 break
 
@@ -76,7 +89,7 @@ def division(dividend, divisors):
             r = r + lt
             p = p - lt
 
-    return r, stats
+    return r, stats, sugar
 
 def load_case(path, order_name):
     with open(path) as fh:
@@ -109,10 +122,11 @@ def main():
     # Setup
     R, F, case = load_case(args.testcase, args.order)
     rule = RULES_MAP[args.rule]
+    track_sugar = (args.rule == "sugar")
     state = {"ring": R, "rng": random.Random(args.seed)}
 
     progress = Progress(enabled=args.verbose)
-    G, stats = buchberger_algorithm(R, F, rule, state, progress)
+    G, stats = buchberger_algorithm(R, F, rule, state, progress, track_sugar)
 
     # TEMP
     print(stats)
