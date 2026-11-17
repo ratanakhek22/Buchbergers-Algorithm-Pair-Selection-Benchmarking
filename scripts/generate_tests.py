@@ -1,3 +1,32 @@
+"""Generate test cases (input ideals) as JSON files for main.py and batch_run.py.
+
+Three families, one subcommand each:
+    cyclic    Cyclic-n in variables x_0..x_{n-1}: for k = 1..n-1, the sum of all products of
+              k cyclically consecutive variables, plus x_0*x_1*...*x_{n-1} - 1.
+    katsura   Katsura-n in variables u_0..u_n: for m = 0..n-1, sum_{l=-n}^{n} u_l*u_{m-l} - u_m
+              (with u_{-l} = u_l and u_l = 0 for |l| > n), plus u_0 + 2*u_1 + ... + 2*u_n - 1.
+    binomial  Random binomial ideals following Peifer et al.'s n-d-s distributions: s binomials
+              c1*x^a + c2*x^b in n variables, non-constant monomials of degree <= d, nonzero
+              coefficients uniform mod 32003. "weighted" picks a degree uniformly, then a monomial
+              of that degree; "uniform" picks uniformly among all monomials of degree 1..d.
+
+Cyclic and Katsura are deterministic: one file per n. Each binomial file is fully determined by
+(n, d, s, dist, seed), so the same command always produces the same files.
+
+Each case file stores family, n, seed, modulus, variables (first = largest under lex) and the
+expanded polynomials as strings; binomial files also store d, s and dist. The monomial order is
+not stored: main.py takes it from -o. Existing files with the same name are overwritten.
+
+Files go to <output>/cases/ (default output: this scripts/ folder, i.e. scripts/cases/).
+-o is an option of the main command, so it must come before the family name.
+
+Examples (from the repo root):
+    python scripts/generate_tests.py cyclic -n 3 4 5          # cyclic3.json, cyclic4.json, cyclic5.json
+    python scripts/generate_tests.py katsura -n 2 3 4 5       # katsura2.json ... katsura5.json
+    python scripts/generate_tests.py binomial -n 3 -d 20 -s 10 --dist weighted --seed 0 --count 100
+                                                              # binomial_3-20-10_weighted_seed0.json ... seed99.json
+    python scripts/generate_tests.py -o somewhere cyclic -n 4 # somewhere/cases/cyclic4.json
+"""
 import argparse
 import sys
 import json
