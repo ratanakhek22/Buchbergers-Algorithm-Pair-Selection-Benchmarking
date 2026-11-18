@@ -180,8 +180,15 @@ def main():
     out_file = args.output / f"{args.testcase.stem}.jsonl"
     args.output.mkdir(parents=True, exist_ok=True)
     if out_file.exists():
+        done = set()
         with open(out_file) as fh:
-            done = {json.loads(line).get("run_id") for line in fh if line.strip()}
+            for line in fh:
+                if not line.strip():
+                    continue
+                try:
+                    done.add(json.loads(line).get("run_id"))
+                except json.JSONDecodeError:
+                    continue          # half-written line from an interrupted run; it will be redone
         if run_id in done:
             print(f"Run {run_id} already in {out_file}, skipping.")
             return 0

@@ -36,9 +36,13 @@ def read_records(out_dir, case):
     if path.exists():
         with open(path) as fh:
             for line in fh:
-                if line.strip():
+                if not line.strip():
+                    continue
+                try:
                     rec = json.loads(line)
-                    records[rec.get("run_id")] = rec
+                except json.JSONDecodeError:
+                    continue          # half-written line from an interrupted run; it will be redone
+                records[rec.get("run_id")] = rec
     return records
 
 
